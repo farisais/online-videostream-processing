@@ -1,8 +1,11 @@
 CC = gcc -std=c99
+AVDIR = av
+GOFILE = http/server.go
+CFILE = ${AVDIR}/av.c ${AVDIR}/av.h
 
-all: av.c av.h server.go
-	$(CC) -c av.c
-	ar cru libavtest.a av.o
+all: $(CFILE) $(GOFILE)
+	$(CC) -c ${AVDIR}/av.c
+	ar cru ${AVDIR}/libavtest.a ${AVDIR}/av.o
 	go get -d
 	go build http/server.go
 
