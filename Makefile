@@ -6,6 +6,8 @@ all:
 	$(CC) -c -I ${AVDIR} ${AVDIR}/av.c
 	ar cru http/libavlib.a av.o
 	go build -o server http/*.go
+	
+install:
 	$(shell ./download-dep.sh)
 
 clean:
