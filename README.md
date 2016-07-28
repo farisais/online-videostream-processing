@@ -17,6 +17,7 @@ make
 make clean
 ```
 ## How To Run
+Running the server
 ```
 ./server
 ```
