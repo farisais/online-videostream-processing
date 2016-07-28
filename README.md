@@ -12,11 +12,11 @@ This project using several dependencies as follows:
 - [OpenCV](http://opencv.org/) version >3
 
 ## How To Build
-Make sure that you have installed ffmpeg and opencv. 
+Make sure that you have installed ffmpeg and OpenCV. 
 
 You can find steps to compile and install ffmpeg in this link <https://trac.ffmpeg.org/wiki/CompilationGuide>.
 
-I'm using anaconda to install OpenCv on my machine <https://www.continuum.io/downloads> and run conda install opencv. Or you can download form http://opencv.org/downloads.html
+I'm using anaconda to install OpenCV on my machine <https://www.continuum.io/downloads> and run conda install opencv. Or you can download form http://opencv.org/downloads.html
 
 To compile and install online-videostream-processing:
 ```
