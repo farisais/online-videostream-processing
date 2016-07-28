@@ -12,5 +12,12 @@ This project using several dependencies as follows:
 - OpenCV version >3
 
 ## How To Build
-
+```
+make
+make clean
+```
 ## How To Run
+Running the server
+```
+./server
+```
