@@ -7,9 +7,9 @@ Video will be streamed using h264 to http server to be decoded to PPM (portable 
 
 ## Dependencies
 This project using several dependencies as follows:
-- ffmpeg
-- jsmpeg
-- OpenCV version >3
+- [ffmpeg](ffmpeg.org)
+- [jsmpeg](https://github.com/phoboslab/jsmpeg)
+- [OpenCV](http://opencv.org/) version >3
 
 ## How To Build
 ```
@@ -21,3 +21,9 @@ Running the server
 ```
 ./server
 ```
+Open cam and stream to endpoint
+```
+./cam-stream.sh
+```
+
+Open client.html to see the live stream of the processed image
