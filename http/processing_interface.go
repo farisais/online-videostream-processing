@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	EXECPATH = "../processing/face.py"
+	EXECPATH = "processing"
 )
 
 func init() {
@@ -51,6 +51,7 @@ func NewProcInterface() *ProcessInterface {
 	python.PyRun_SimpleString("import sys")
 	python.PyRun_SimpleString("sys.path.append('" + wdp + "')")
 	mod := python.PyImport_ImportModule("face")
+	evalPython()
 	execfunc := mod.GetAttrString("process")
 	evalPython()
 	lock.Unlock()
@@ -63,33 +64,29 @@ func NewProcInterface() *ProcessInterface {
 }
 
 func (pi *ProcessInterface) RunProcessing(PipeIn *chan []byte) {
-	for {
-		select {
-		case d := <-*PipeIn:
-			lock.Lock()
-			/*
-			 * Set param to be passed to python function
-			 */
-			param := python.PyTuple_New(1)
-			pyData := python.PyByteArray_FromStringAndSize(
-				string(d),
-			)
-			python.PyTuple_SET_ITEM(param, 0, pyData)
-			result := pi.ExecFunc.CallObject(param)
-			evalPython()
-			if result != nil {
-				processedData := python.PyByteArray_AsBytes(result)
-				if len(processedData) > 0 {
-					/*
-					 * Send the result to pipe
-					 */
-					pi.PipeOut <- processedData
-				}
+	for d := range *PipeIn {
+		lock.Lock()
+		/*
+		 * Set param to be passed to python function
+		 */
+		param := python.PyTuple_New(1)
+		pyData := python.PyByteArray_FromStringAndSize(
+			string(d),
+		)
+		python.PyTuple_SET_ITEM(param, 0, pyData)
+		result := pi.ExecFunc.CallObject(param)
+		evalPython()
+		if result != nil {
+			processedData := python.PyByteArray_AsBytes(result)
+			if len(processedData) > 0 {
+				/*
+				 * Send the result to pipe
+				 */
+				pi.PipeOut <- processedData
 			}
-			param.Clear()
-			pyData.Clear()
-
-			lock.Unlock()
 		}
+		// param.Clear()
+		// pyData.Clear()
+		lock.Unlock()
 	}
 }

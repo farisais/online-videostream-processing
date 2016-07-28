@@ -29,6 +29,10 @@ func NewAvInterface() *AvProcessInterface {
 		PipeOutDecoder: make(chan []byte, 100),
 	}
 
+	cargs := C.CString("h264")
+	C.init_decoder(cargs)
+	C.init_encoder()
+
 	return avint
 }
 

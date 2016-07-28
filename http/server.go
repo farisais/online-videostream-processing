@@ -12,6 +12,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"io"
@@ -74,8 +76,8 @@ func receiveStream(w http.ResponseWriter, r *http.Request) {
 		 * Setup chain pipe processing
 		 */
 		go conn.avInterface.RunDecoder(&conn.receiverBuffer)
-		go conn.procInterface.RunProcessing(&avInterface.PipeOutDecoder)
-		go conn.avInterface.RunEncoder(&procInterface.PipeOut)
+		go conn.procInterface.RunProcessing(&conn.avInterface.PipeOutDecoder)
+		go conn.avInterface.RunEncoder(&conn.procInterface.PipeOut)
 
 		go func() {
 			for d := range conn.avInterface.PipeOutEncoder {
@@ -110,7 +112,6 @@ func receiveStream(w http.ResponseWriter, r *http.Request) {
 			if err != nil && err != io.EOF {
 				fmt.Println(err)
 			}
-
 			conn.receiverBuffer <- buf
 		}
 
@@ -165,6 +166,20 @@ func listen(w http.ResponseWriter, r *http.Request) {
 
 		conn := NewConnection(ws, secret[0])
 		relay.Register <- conn
+
+		/*
+		 * Sending initial frame required by jsmpg
+		 */
+		var width uint16 = 640
+		var height uint16 = 480
+		prefixCode := []byte("jsmp")
+
+		buf := new(bytes.Buffer)
+		binary.Write(buf, binary.BigEndian, prefixCode)
+		binary.Write(buf, binary.BigEndian, width)
+		binary.Write(buf, binary.BigEndian, height)
+		conn.Send <- buf.Bytes()
+
 		conn.ListenWrite()
 	}
 }
@@ -187,7 +202,7 @@ func main() {
 	/*
 	 * Start the http server
 	 */
-	fmt.Printf(">>> Running server on %s:%s <<<", addr, port)
+	fmt.Printf(">>> Running server on %s:%s <<<\n", addr, port)
 	err := http.ListenAndServe(addr+":"+port, nil)
 	if err != nil {
 		fmt.Println("Error while running http server: ", err)
