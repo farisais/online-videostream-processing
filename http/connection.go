@@ -1,23 +1,33 @@
 package main
 
 import (
-	"golang.org/x/net/websocket"
-	"net/http"
+	"fmt"
+	"github.com/gorilla/websocket"
+	"time"
 )
 
 var curId int = 0
 
+const (
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	maxMessageSize = 32768
+)
+
 type Connection struct {
-	Ws   *websocket.Conn
-	Send chan []byte
-	id   int
+	Ws      *websocket.Conn
+	Send    chan []byte
+	id      int
+	session string
 }
 
-func NewConnection(ws *websocket.Conn) *Connection {
+func NewConnection(ws *websocket.Conn, ses string) *Connection {
 	conn := &Connection{
-		Ws:   ws,
-		Send: make(chan []byte, 100),
-		id:   curId,
+		Ws:      ws,
+		Send:    make(chan []byte, 100),
+		id:      curId,
+		session: ses,
 	}
 	curId++
 	return conn

@@ -1,17 +1,12 @@
 package main
 
-import (
-	"golang.org/x/net/websocket"
-	"net/http"
-)
-
 type Relay struct {
 
 	// Connection list
 	Connections map[*Connection]bool
 
 	// Broadcast data buffer
-	Broadcast chan []byte
+	Broadcast chan []interface{}
 
 	// Register requests from the connections.
 	Register chan *Connection
@@ -31,12 +26,13 @@ func (r *Relay) Run() {
 				close(c.Send)
 			}
 		case d := <-r.Broadcast:
-			for c:= range(r.Connections){
-				select {
-					case c.Send <- d:
+			for c := range r.Connections {
+				if c.session == d[0].(string) {
+					select {
+					case c.Send <- d[1].([]byte):
 					default:
 						close(c.Send)
-						delete(h.Connections, c)
+						delete(r.Connections, c)
 					}
 				}
 			}
