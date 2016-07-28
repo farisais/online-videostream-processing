@@ -12,7 +12,7 @@ This project using several dependencies as follows:
 - [jsmpeg](https://github.com/phoboslab/jsmpeg)
 - [OpenCV](http://opencv.org/) version >3
 
-## How To Build
+## How To Install
 Make sure that you have installed Golang, ffmpeg and OpenCV locally. 
 
 You can find the steps to compile and install ffmpeg in this link <https://trac.ffmpeg.org/wiki/CompilationGuide>.
