@@ -3,14 +3,14 @@ import cv2
 import numpy as np
 
 frame = 0
-cascPath = 'haarcascade_frontalface_alt2.xml'
+cascPath = 'processing/haarcascade_frontalface_alt2.xml'
 faceCascade = cv2.CascadeClassifier(cascPath)
 
 def process(data):
 	nparr = np.frombuffer(data, np.uint8)
 	img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 	gray = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
-	
+
 	faces = faceCascade.detectMultiScale(
 		gray,
 		scaleFactor=1.1,
