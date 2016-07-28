@@ -7,7 +7,7 @@ Video will be streamed using h264 to http server to be decoded to PPM (portable 
 
 ## Dependencies
 This project using several dependencies as follows:
-- [ffmpeg](ffmpeg.org)
+- [ffmpeg](http://ffmpeg.org)
 - [jsmpeg](https://github.com/phoboslab/jsmpeg)
 - [OpenCV](http://opencv.org/) version >3
 
