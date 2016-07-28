@@ -7,12 +7,13 @@ Video will be streamed using h264 to http server, decoded to PPM (portable pixma
 
 ## Dependencies
 This project using several dependencies as follows:
+- [Go](https://golang.org/) version >1.5
 - [ffmpeg](http://ffmpeg.org)
 - [jsmpeg](https://github.com/phoboslab/jsmpeg)
 - [OpenCV](http://opencv.org/) version >3
 
 ## How To Build
-Make sure that you have installed ffmpeg and OpenCV. 
+Make sure that you have installed Golang, ffmpeg and OpenCV locally. 
 
 You can find the steps to compile and install ffmpeg in this link <https://trac.ffmpeg.org/wiki/CompilationGuide>.
 
