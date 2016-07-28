@@ -14,6 +14,7 @@ This project using several dependencies as follows:
 ## How To Build
 ```
 make
+make install
 make clean
 ```
 ## How To Run
