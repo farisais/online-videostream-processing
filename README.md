@@ -26,13 +26,25 @@ make install
 make clean
 ```
 ## How To Run
-Running the server
+To run the server you need to specify two options which are the codec (to decode the frame) and the processing algorithm. Available algorithm:
+- face : face detection
+- corner_detect : corner detection
+- background_substract_mog2 : background substractor
+- edge_detect : edge detection
+
+If you have your own algorithm just put under "processing folder" and specify its filename in the --alg option (without .py extension)
+```shell
+# sample using h264 codec to decode and face detection algorithm
+./server --codec=h264 --alg=face
+
+# using mpeg1 codec to decode and corner detection algorithm
+./server --codec=mpeg1video --alg=corner_detect
 ```
-./server
-```
-Open cam and stream to endpoint
+Open cam and stream to endpoint.
 ```
 ./cam-stream.sh
 ```
+
+\* Note that you need to modify codec paramter manually in the ffmpeg option according to the one you specify in the server argument.
 
 Open client.html to see the live stream of the processed image
