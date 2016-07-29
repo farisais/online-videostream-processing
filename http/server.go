@@ -109,6 +109,7 @@ func receiveStream(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 				if err == io.EOF {
+					fmt.Println("End of file reach ...")
 					break
 				}
 				fmt.Println(err)
@@ -137,7 +138,8 @@ func removeConFromList(con *StreamEndpoint) {
 			index = i
 		}
 	}
-	if index > 0 {
+	if index >= 0 {
+		fmt.Println("Removing connection from relay : ", con.session)
 		InConnections = append(InConnections[:index], InConnections[index+1:]...)
 	}
 }
@@ -196,9 +198,9 @@ func main() {
 	/*
 	 * Parsing flag
 	 */
-	flag.Parse()
 	codec = flag.String("codec", "h264", "Codec to use to decode frame")
 	processAlg = flag.String("alg", "", "Processing algorithm")
+	flag.Parse()
 
 	fmt.Println(".")
 	/*
