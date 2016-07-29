@@ -1,5 +1,5 @@
 # online-videostream-processing
-Experimenting online video stream processing which include transcoding, image processing (face recognition) in realtime, instead performing the frame processing locally
+Experimenting online video stream processing which include transcoding, image processing (face recognition, corner detection, etc) in realtime, instead performing the frame processing locally
 
 HTTP and websocket server are written in GO, video decoding and encoding library are written in C utilizing ffmpeg (libavcoded, libavutil, and libswscale), image processing library using OpenCV with python binding, and web client decoder to view the processed video is using jsmpeg library which written in javascript.
 
