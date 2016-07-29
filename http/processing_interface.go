@@ -40,7 +40,7 @@ type ProcessInterface struct {
 	ExecFunc *python.PyObject
 }
 
-func NewProcInterface() *ProcessInterface {
+func NewProcInterface(alg *string) *ProcessInterface {
 	/*
 	 * Load the python function to be called every receive new data
 	 */
@@ -50,7 +50,7 @@ func NewProcInterface() *ProcessInterface {
 	lock.Lock()
 	python.PyRun_SimpleString("import sys")
 	python.PyRun_SimpleString("sys.path.append('" + wdp + "')")
-	mod := python.PyImport_ImportModule("face")
+	mod := python.PyImport_ImportModule(*alg)
 	evalPython()
 	execfunc := mod.GetAttrString("process")
 	evalPython()

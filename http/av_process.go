@@ -23,13 +23,13 @@ type AvProcessInterface struct {
 	PipeOutDecoder chan []byte
 }
 
-func NewAvInterface() *AvProcessInterface {
+func NewAvInterface(codec *string) *AvProcessInterface {
 	avint := &AvProcessInterface{
 		PipeOutEncoder: make(chan []byte, 100),
 		PipeOutDecoder: make(chan []byte, 100),
 	}
 
-	cargs := C.CString("h264")
+	cargs := C.CString(*codec)
 	C.init_decoder(cargs)
 	C.init_encoder()
 

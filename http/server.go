@@ -14,6 +14,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"flag"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"io"
@@ -41,10 +42,14 @@ var relay = Relay{
 }
 
 /*
- * Interface data structure
+ * Codec to use to decode the frame
  */
-var avInterface AvProcessInterface
-var procInterface ProcessInterface
+var codec *string
+
+/*
+ * Processing algorithm
+ */
+var processAlg *string
 
 type StreamEndpoint struct {
 	session        string
@@ -60,14 +65,15 @@ func receiveStream(w http.ResponseWriter, r *http.Request) {
 	secret, ok := r.URL.Query()["secret"]
 
 	/*
-	 * Check if alrady session running
+	 * Check if already session running
 	 */
+
 	if exist := isSessionExist(secret[0]); ok && !exist {
 		conn := &StreamEndpoint{
 			session:        secret[0],
 			receiverBuffer: make(chan []byte, 100),
-			avInterface:    NewAvInterface(),
-			procInterface:  NewProcInterface(),
+			avInterface:    NewAvInterface(codec),
+			procInterface:  NewProcInterface(processAlg),
 		}
 
 		InConnections = append(InConnections, conn)
@@ -186,6 +192,14 @@ func listen(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	runtime.GOMAXPROCS(CPU)
+
+	/*
+	 * Parsing flag
+	 */
+	flag.Parse()
+	codec = flag.String("codec", "h264", "Codec to use to decode frame")
+	processAlg = flag.String("alg", "", "Processing algorithm")
+
 	fmt.Println(".")
 	/*
 	 * Registering http handler
