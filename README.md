@@ -32,7 +32,7 @@ To run the server you need to specify two options which are the codec (to decode
 - background_substract_mog2 : background substractor
 - edge_detect : edge detection
 
-If you have your own algorithm just put under "processing folder" and specify its filename in the --alg option (without .py extension)
+If you have your own algorithm just put under "processing" folder and specify its filename in the --alg option (without .py extension)
 ```shell
 # sample using h264 codec to decode and face detection algorithm
 ./server --codec=h264 --alg=face
