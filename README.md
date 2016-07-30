@@ -17,7 +17,7 @@ Make sure that you have installed Golang, ffmpeg and OpenCV locally.
 
 You can find the steps to compile and install ffmpeg in this link <https://trac.ffmpeg.org/wiki/CompilationGuide>. If you are using Mac OS X you can install it using **brew install ffmpeg**
 
-I'm using anaconda to install OpenCV on my machine <https://www.continuum.io/downloads> and run 'conda install opencv'. Or you can download form http://opencv.org/downloads.html
+I'm using anaconda to install OpenCV on my machine <https://www.continuum.io/downloads> and run ***conda install opencv***. Or you can download form http://opencv.org/downloads.html
 
 To build and install online-videostream-processing:
 ```
