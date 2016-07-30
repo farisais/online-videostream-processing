@@ -15,7 +15,7 @@ This project using several dependencies as follows:
 ## How To Install
 Make sure that you have installed Golang, ffmpeg and OpenCV locally. 
 
-You can find the steps to compile and install ffmpeg in this link <https://trac.ffmpeg.org/wiki/CompilationGuide>.
+You can find the steps to compile and install ffmpeg in this link <https://trac.ffmpeg.org/wiki/CompilationGuide>. If you are using Mac OS X you can install it using **brew install ffmpeg**
 
 I'm using anaconda to install OpenCV on my machine <https://www.continuum.io/downloads> and run 'conda install opencv'. Or you can download form http://opencv.org/downloads.html
 
@@ -32,7 +32,7 @@ To run the server you need to specify two options which are the codec (to decode
 - background_substract_mog2 : background substractor
 - edge_detect : edge detection
 
-If you have your own algorithm just put under "processing" folder and specify its filename in the --alg option (without .py extension)
+If you have your own algorithm just put under **"processing"** folder and specify its filename in the **--alg** option (without .py extension)
 ```shell
 # sample using h264 codec to decode and face detection algorithm
 ./server --codec=h264 --alg=face
@@ -47,4 +47,4 @@ Open cam and stream to endpoint.
 
 \* Note that you need to modify codec paramter manually in the ffmpeg option according to the one you specify in the server argument.
 
-Open client.html to see the live stream of the processed image
+Open **client.html** to see the live stream of the processed image
