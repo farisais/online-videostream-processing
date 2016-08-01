@@ -19,13 +19,20 @@
 #endif
 
 #include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 #include <libavutil/mathematics.h>
 #include <libswscale/swscale.h>
+
+ #define _GNU_SOURCE
 
 /*
  * Buffer to store video stream to be decoded
  */
 #define INBUF_SIZE 409600
+
+typedef int bool;
+#define true 1
+#define false 0
 
 /*
  * Data structure to store decoding result
@@ -49,8 +56,10 @@ typedef struct EncodeResult {
 	int encoded;
 } EncodeResult;
 
-void init_decoder(char* codec_name);
+void init_decoder(char* codec_name, char* gosecret);
 DecodeResult* decode_video(char* data, size_t size);
+int readFunction(void* opaque, uint8_t* buf, int buf_size);
+void decode_video2(char* data, size_t size);
 void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame);
 void construct_ppm_frame(uint8_t* buf, AVFrame* pframe, int width, int height);
 void construct_ppm_frame_gray(uint8_t* buf, AVFrame* pframe, int width, int height);

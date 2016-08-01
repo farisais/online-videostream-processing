@@ -51,6 +51,11 @@ var codec *string
  */
 var processAlg *string
 
+/*
+ * Pointer ref to the current avprocess interface
+ */
+var AVObjPtr *AvProcessInterface
+
 type StreamEndpoint struct {
 	session        string
 	receiverBuffer chan []byte
@@ -72,7 +77,7 @@ func receiveStream(w http.ResponseWriter, r *http.Request) {
 		conn := &StreamEndpoint{
 			session:        secret[0],
 			receiverBuffer: make(chan []byte, 100),
-			avInterface:    NewAvInterface(codec),
+			avInterface:    NewAvInterface(codec, secret[0]),
 			procInterface:  NewProcInterface(processAlg),
 		}
 

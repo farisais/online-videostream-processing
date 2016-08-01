@@ -2,21 +2,34 @@
  *  Video Decoder & Encoder
  *  Copyright (c) 2016 - Faris Rahman <farisais@hotmail.com> 
  *  
- * 	Utilizing libavcodec, libavutil, libswscale which is
- * 	part of the ffmpeg open source project 
- * 	see http://ffmpeg.org for more information
+ *  Utilizing libavcodec, libavutil, libswscale which is
+ *  part of the ffmpeg open source project 
+ *  see http://ffmpeg.org for more information
  */
 
 #include "av.h"
+#include "../mem/fmemopen.h"
 
 /*
  * Global variabel decoder
  * Need to be declared as global variable hence no need to reinit
  * when processing video stream data
  */
+ #define OUTWIDTH 640
+ #define OUTHEIGHT 480
 
 AVCodec *codec;
-AVCodecContext *ctx;
+AVCodecContext* ctx;
+
+AVCodec* dcodec = NULL;
+AVCodecContext* dctx = NULL;
+bool isDCodecInit;
+AVFormatContext* pFormatCtx;
+uint8_t* IOBuffer;
+AVIOContext* IOCtx;
+uint8_t* dbuffer = NULL;
+struct SwsContext* dsws_ctx = NULL;
+
 uint8_t* inbuf;
 char buf[1024];
 AVPacket avpkt;
@@ -28,7 +41,6 @@ struct SwsContext *sws_ctx = NULL;
 uint8_t *picBuffer = NULL;
 AVCodecParserContext* parserCtx;
 int current_stream_size;
-
 
 /* 
  * Global variabel encoder
@@ -49,6 +61,11 @@ EncodeResult* encodeResult;
 struct SwsContext* sws_enctx = NULL;
 
 /*
+ * Secret key as user process identifier
+ */
+char* secret;
+
+/*
  * Function to initialise encoder codec context
  */
 void init_encoder(){
@@ -66,8 +83,8 @@ void init_encoder(){
 
 	// Encode using MPEG-1
 	enctx->bit_rate = 400000;
-	enctx->width = 640;
-	enctx->height = 480;
+	enctx->width = OUTWIDTH;
+	enctx->height = OUTHEIGHT;
 	enctx->time_base = (AVRational){1,30};
 	enctx->gop_size = 10;
 	enctx->max_b_frames = 1;
@@ -103,8 +120,8 @@ void init_encoder(){
   }
 
   sws_enctx = sws_getContext(
-  	640, 
-		480,
+  	OUTWIDTH, 
+		OUTHEIGHT,
 		AV_PIX_FMT_RGB24,
 		enctx->width,
 		enctx->height,
@@ -134,7 +151,7 @@ void init_encoder(){
 /*
  * Function to initialise decoder codec context
  */
-void init_decoder(char* codec_name){
+void init_decoder(char* codec_name, char* gosecret){
 	av_register_all();
 	//memset(inbuf + INBUF_SIZE, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 	//memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
@@ -150,6 +167,8 @@ void init_decoder(char* codec_name){
 		fprintf(stderr, "Codec not found\n");
 		exit(1);
 	}
+
+	pFormatCtx = avformat_alloc_context();
 
 	ctx = avcodec_alloc_context3(codec);
 	picture = av_frame_alloc();
@@ -177,8 +196,8 @@ void init_decoder(char* codec_name){
 		exit(1);
 	}
 
-	ctx->width = 640;
-	ctx->height = 480;
+	ctx->width = OUTWIDTH;
+	ctx->height = OUTHEIGHT;
 
 	decodeResultBuf = (struct DecodeResult*)malloc(sizeof(struct DecodeResult));
 	decodeResultBuf->got_picture = 0;
@@ -189,6 +208,9 @@ void init_decoder(char* codec_name){
 	decodeResultBuf->width = ctx->width;
 	decodeResultBuf->height = ctx->height;
 
+	/*
+   * Deprecated if using new decode function
+   */
 	sws_ctx = sws_getContext(ctx->width, 
 		ctx->height,
 		AV_PIX_FMT_YUV420P,
@@ -204,8 +226,150 @@ void init_decoder(char* codec_name){
 	int numBytes = avpicture_get_size(AV_PIX_FMT_RGB24, ctx->width, ctx->height);
 	picBuffer = (uint8_t*)malloc(numBytes * sizeof(uint8_t));
 
+	isDCodecInit = false;
+	secret = gosecret;
+
 	frame = 0;
 	fprintf(stderr, "Success init decoder\n");
+}
+
+/*
+ * Function to read bytes from stream pointer to buffer. 
+ * Ressembling fread() in C std lib
+ */
+int readFunction(void* opaque, uint8_t* buf, int buf_size){
+	FILE* f = (FILE*)opaque;
+
+	int numbytes = fread(buf, buf_size, 1, f);
+
+	/*
+	 * fread returning num of data successfully read with size of buf_size
+	 * hence we need to multiply with buf size as the return value for the 
+	 * avio_alloc_context to fill the buffer with
+	 */
+	return numbytes * buf_size;
+}
+
+/*
+ * New function to compensate multiple frame in one stream data
+ * Will be using callback to communicate with Go.
+ */
+void decode_video2(char* data, size_t size){
+	/*
+	 * Cast binary data buffer to FILE data pointer
+	 */
+	FILE* f = fmemopen((void*)data, size, "r");
+
+	fseek(f, 0, SEEK_END);
+	unsigned long len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	printf("file length : %d", len);
+	
+	IOBuffer = (uint8_t*)av_malloc(len + FF_INPUT_BUFFER_PADDING_SIZE);
+	IOCtx = avio_alloc_context(IOBuffer, len, 0, (void*)f, &readFunction, NULL, NULL);
+
+	pFormatCtx->pb = IOCtx;
+	if (avformat_open_input(&pFormatCtx, "tmp", NULL, NULL) != 0){
+		printf("Error when opening input format ...\n");
+		return;
+	}
+
+	if (avformat_find_stream_info(pFormatCtx, NULL) < 0){
+		printf("Couldn't find stream info ...\n");
+		return;
+	}
+
+	int i = 0;
+	/*
+	 * Finding the Video frame within the stream data
+	 */
+	int videoStream = -1;
+	for(i=0;i<pFormatCtx->nb_streams;i++){
+		if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
+			videoStream = i;
+			break;
+		}
+	}
+
+	/*
+	 * If video frame is found, then decode
+	 */
+	if (videoStream > -1){
+		/*
+		 * Need to initialize codec context, codec, buffer, and sws_context for 
+		 * filling the frame if hasn't been initialized 
+		 */
+		if(!isDCodecInit){
+			dctx = pFormatCtx->streams[videoStream]->codec;
+			dcodec = avcodec_find_decoder(dctx->codec_id);
+			if(dcodec != NULL){
+				if(avcodec_open2(dctx, dcodec, NULL) >= 0){
+					int numbytes = avpicture_get_size(AV_PIX_FMT_RGB24, OUTWIDTH, 
+																OUTHEIGHT);
+					dbuffer = (uint8_t*)av_malloc(numbytes * sizeof(uint8_t));
+					/*
+					 * Initialize sws context, we need to scale it to 640x480
+					 */
+					dsws_ctx = sws_getContext(
+						dctx->width, 
+						dctx->height,
+						dctx->pix_fmt,
+						OUTWIDTH,
+						OUTHEIGHT,
+						AV_PIX_FMT_RGB24,
+						SWS_BILINEAR,
+						NULL,
+						NULL,
+						NULL
+					);
+
+					isDCodecInit = true;
+				}
+			}
+		}
+
+		/*
+		 * Recheck if the context and codec is initialized
+		 */
+		if(dctx != NULL && dcodec != NULL){
+			/*
+			 * Begin decoding
+			 */
+			AVPacket dpacket;
+			avpicture_fill((AVPicture *)pictureRGB, dbuffer, AV_PIX_FMT_RGB24,
+									OUTWIDTH, OUTHEIGHT);
+			int i = 0;
+			int got_picture;
+			while(av_read_frame(pFormatCtx, &dpacket) >= 0){
+				avcodec_decode_video2(dctx, picture, &got_picture, &dpacket);
+				if(got_picture){
+					sws_scale(dsws_ctx, (uint8_t const * const *)picture->data,
+									picture->linesize, 0, dctx->height,
+									pictureRGB->data, pictureRGB->linesize);
+					construct_ppm_frame(decodeResultBuf->ppm_frame_buffer, pictureRGB, 
+						ctx->width, ctx->height);
+
+					/* 
+					 * Sending back to Go
+					 */
+					avDecodeCallback((char*)decodeResultBuf->ppm_frame_buffer, 
+						decodeResultBuf->ppm_frame_size,secret);
+				}
+				av_free_packet(&dpacket);
+			}
+
+		} else {
+			printf("IO Context is not initialized\n");
+		}
+	}
+
+	/*
+	 * Clean the buffer and IO Context to be used for the next 
+	 * data stream
+	 */
+	free(IOBuffer);
+	av_free(IOCtx);
 }
 
 DecodeResult* decode_video(char* data, size_t size){
