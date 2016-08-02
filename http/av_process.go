@@ -81,22 +81,22 @@ func (avint *AvProcessInterface) RunDecoder(PipeIn *chan []byte) {
 		fmt.Println("data length : ", len(d))
 		fmt.Println("got byte : ", d[:100])
 		cargs := C.CString(string(d))
-		C.decode_video2(cargs, C.size_t(len(d)))
-		//dec_struct := (*C.struct_DecodeResult)(unsafe.Pointer(res_ptr))
+		res_ptr := C.decode_video(cargs, C.size_t(len(d)))
+		dec_struct := (*C.struct_DecodeResult)(unsafe.Pointer(res_ptr))
 		/*
 		 * Check if we got result
 		 */
-		//if dec_struct.got_picture == 1 {
-		/*
-		 * Get the decoded frame from the buffer
-		 */
-		// dec_frame := C.GoBytes(unsafe.Pointer(dec_struct.ppm_frame_buffer),
-		// 	C.int(dec_struct.ppm_frame_size))
-		// avint.PipeOutDecoder <- dec_frame
-		//}
+		if dec_struct.got_picture == 1 {
+			/*
+			 * Get the decoded frame from the buffer
+			 */
+			dec_frame := C.GoBytes(unsafe.Pointer(dec_struct.ppm_frame_buffer),
+				C.int(dec_struct.ppm_frame_size))
+			avint.PipeOutDecoder <- dec_frame
+		}
 		/*
 		 * We need to free the C allocated pointer as it won't be freed by Go garbage collector
 		 */
-		//C.free(unsafe.Pointer(cargs))
+		C.free(unsafe.Pointer(cargs))
 	}
 }
