@@ -10,11 +10,13 @@
 
 package main
 
+import "fmt"
+
 /*
 #cgo CFLAGS: -I ../av
 #cgo LDFLAGS: -L${SRCDIR} -lavlib -lavformat -lavcodec -lx264 -lavdevice -lavutil -lswscale -lswresample -lz -lm
 #include "av.h"
-void avDecodeCallback(char* data, int size, char* secret);
+inline void avDecodeCallback(char* data, int size, char* secret);
 */
 import "C"
 import "unsafe"
@@ -76,6 +78,8 @@ func (avint *AvProcessInterface) RunEncoder(PipeIn *chan []byte) {
 
 func (avint *AvProcessInterface) RunDecoder(PipeIn *chan []byte) {
 	for d := range *PipeIn {
+		fmt.Println("data length : ", len(d))
+		fmt.Println("got byte : ", d[:100])
 		cargs := C.CString(string(d))
 		C.decode_video2(cargs, C.size_t(len(d)))
 		//dec_struct := (*C.struct_DecodeResult)(unsafe.Pointer(res_ptr))
@@ -93,6 +97,6 @@ func (avint *AvProcessInterface) RunDecoder(PipeIn *chan []byte) {
 		/*
 		 * We need to free the C allocated pointer as it won't be freed by Go garbage collector
 		 */
-		C.free(unsafe.Pointer(cargs))
+		//C.free(unsafe.Pointer(cargs))
 	}
 }

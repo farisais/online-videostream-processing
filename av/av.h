@@ -58,7 +58,6 @@ typedef struct EncodeResult {
 
 void init_decoder(char* codec_name, char* gosecret);
 DecodeResult* decode_video(char* data, size_t size);
-int readFunction(void* opaque, uint8_t* buf, int buf_size);
 void decode_video2(char* data, size_t size);
 void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame);
 void construct_ppm_frame(uint8_t* buf, AVFrame* pframe, int width, int height);

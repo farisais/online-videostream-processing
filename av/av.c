@@ -8,7 +8,7 @@
  */
 
 #include "av.h"
-#include "../mem/fmemopen.h"
+#include "fmemopen.h"
 
 /*
  * Global variabel decoder
@@ -22,13 +22,13 @@ AVCodec *codec;
 AVCodecContext* ctx;
 
 AVCodec* dcodec = NULL;
+AVIOContext* IOCtx;
 AVCodecContext* dctx = NULL;
 bool isDCodecInit;
 AVFormatContext* pFormatCtx;
-uint8_t* IOBuffer;
-AVIOContext* IOCtx;
 uint8_t* dbuffer = NULL;
 struct SwsContext* dsws_ctx = NULL;
+uint8_t* IOBuffer = NULL;
 
 uint8_t* inbuf;
 char buf[1024];
@@ -237,11 +237,16 @@ void init_decoder(char* codec_name, char* gosecret){
  * Function to read bytes from stream pointer to buffer. 
  * Ressembling fread() in C std lib
  */
-int readFunction(void* opaque, uint8_t* buf, int buf_size){
+static inline int readFunction(void* opaque, uint8_t* buf, int buf_size){
 	FILE* f = (FILE*)opaque;
 
 	int numbytes = fread(buf, buf_size, 1, f);
 
+	printf("READ : [ ");
+	for(int j=0;j<100;j++){
+		printf("%hhu ", buf[j]);
+	}
+	printf("]\n");
 	/*
 	 * fread returning num of data successfully read with size of buf_size
 	 * hence we need to multiply with buf size as the return value for the 
@@ -258,32 +263,36 @@ void decode_video2(char* data, size_t size){
 	/*
 	 * Cast binary data buffer to FILE data pointer
 	 */
-	FILE* f = fmemopen((void*)data, size, "r");
+	FILE* f = fmemopen((const void*)data, size * sizeof(char), "r+");
 
 	fseek(f, 0, SEEK_END);
 	unsigned long len = ftell(f);
 	fseek(f, 0, SEEK_SET);
+	printf("file length : %d\n", len);
 
-	printf("file length : %d", len);
-	
-	IOBuffer = (uint8_t*)av_malloc(len + FF_INPUT_BUFFER_PADDING_SIZE);
+	printf("alloc io buffer\n");
+	IOBuffer = (uint8_t*)av_malloc((len + FF_INPUT_BUFFER_PADDING_SIZE) * sizeof(uint8_t));
+	printf("finish alloc io buffer\n");
+	//printf("io buffer @ %p\n", *IOBuffer);
 	IOCtx = avio_alloc_context(IOBuffer, len, 0, (void*)f, &readFunction, NULL, NULL);
 
 	pFormatCtx->pb = IOCtx;
+	printf("open input  video frame ...\n");
 	if (avformat_open_input(&pFormatCtx, "tmp", NULL, NULL) != 0){
 		printf("Error when opening input format ...\n");
 		return;
 	}
-
+	printf("open input  video frame ...\n");
 	if (avformat_find_stream_info(pFormatCtx, NULL) < 0){
 		printf("Couldn't find stream info ...\n");
 		return;
 	}
-
+	printf("finding video frame ...\n");
 	int i = 0;
 	/*
 	 * Finding the Video frame within the stream data
 	 */
+	printf("finding video frame ...\n");
 	int videoStream = -1;
 	for(i=0;i<pFormatCtx->nb_streams;i++){
 		if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
@@ -291,7 +300,7 @@ void decode_video2(char* data, size_t size){
 			break;
 		}
 	}
-
+	printf("video frame : %d\n", videoStream);
 	/*
 	 * If video frame is found, then decode
 	 */
@@ -332,6 +341,7 @@ void decode_video2(char* data, size_t size){
 		/*
 		 * Recheck if the context and codec is initialized
 		 */
+		printf("Recheck ...\n");
 		if(dctx != NULL && dcodec != NULL){
 			/*
 			 * Begin decoding
@@ -344,6 +354,7 @@ void decode_video2(char* data, size_t size){
 			while(av_read_frame(pFormatCtx, &dpacket) >= 0){
 				avcodec_decode_video2(dctx, picture, &got_picture, &dpacket);
 				if(got_picture){
+					printf("got pic ...\n");
 					sws_scale(dsws_ctx, (uint8_t const * const *)picture->data,
 									picture->linesize, 0, dctx->height,
 									pictureRGB->data, pictureRGB->linesize);
@@ -355,8 +366,12 @@ void decode_video2(char* data, size_t size){
 					 */
 					avDecodeCallback((char*)decodeResultBuf->ppm_frame_buffer, 
 						decodeResultBuf->ppm_frame_size,secret);
+				} else {
+					printf("got no pic ...\n");
 				}
+				printf("freeing packet ...\n");
 				av_free_packet(&dpacket);
+				printf("complete freeing packet ...\n");
 			}
 
 		} else {
@@ -368,8 +383,15 @@ void decode_video2(char* data, size_t size){
 	 * Clean the buffer and IO Context to be used for the next 
 	 * data stream
 	 */
-	free(IOBuffer);
-	av_free(IOCtx);
+	printf("freeing iobuffer ...\n");
+	av_free(IOBuffer);
+	printf("complete freeing iobuffer ...\n");
+	printf("freeing ioctx ...\n");
+	av_free(IOCtx->buffer);
+	printf("complete freeing ioctx ...\n");
+	printf("freeing file ...\n");
+	fclose(f);
+	printf("complete freeing file ...\n");
 }
 
 DecodeResult* decode_video(char* data, size_t size){
